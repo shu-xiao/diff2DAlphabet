@@ -150,6 +150,8 @@ def main():
     output.Write()
 
     c1.Print(pdfName+']')
+    print "event",h_bk_Mh.Integral(),h_SB_Mh.Integral()
+    print "event ratio: ",h_bk_Mh.Integral()/h_SB_Mh.Integral()
 
 if __name__ == '__main__':
     main()

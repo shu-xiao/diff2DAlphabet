@@ -25,6 +25,23 @@ def main():
     gStyle.SetPaintTextFormat('1.1f')
     output = TFile('diffratio.root','recreate')
     c1 = TCanvas('c1','c1',1600,1200)
+    h_MhpassProfile = []
+    h_MhfailProfile = []
+    h_MhdifProfile = []
+    h_MZppassProfile = []
+    h_MZpfailProfile = []
+    h_MZpdifProfile = []
+    for i in range(4):
+        h_MhpassProfile.append( TH1F('h_MhpassProfile_'+str(i),'h_MhpassProfile_'+str(i),25,100,150))
+        h_MhfailProfile.append( TH1F('h_MhfailProfile_'+str(i),'h_MhfailProfile_'+str(i),25,100,150))
+        h_MhdifProfile.append( TH1F('h_MhdifProfile_'+str(i),'h_MhdifProfile_'+str(i),25,100,150))
+        h_MhpassProfile[i].Sumw2()
+        h_MhfailProfile[i].Sumw2()
+        h_MZppassProfile.append(TH1F('h_MZppassProfile_'+str(i),'h_MZppassProfile_'+str(i),20,500,2500))
+        h_MZpfailProfile.append(TH1F('h_MZpfailProfile_'+str(i),'h_MZpfailProfile_'+str(i),20,500,2500))
+        h_MZpdifProfile.append(TH1F('h_MZpdifProfile_'+str(i),'h_MZpdifProfile_'+str(i),20,500,2500))
+        h_MZppassProfile[i].Sumw2()
+        h_MZpfailProfile[i].Sumw2()
     h_pass = TH2F('h_MhMZp_pass','h_MhMZp_pass',25,100,150,20,500,2500)
     h_pass.Sumw2()
     h_alphabet = TH2F('h_MhMZp_alphabet','h_MhMZp_alphabet',25,100,150,20,500,2500)
@@ -83,6 +100,9 @@ def main():
         #print en, myTree.isTag, myTree.isAntiTag
         if (en>=1000 and len(sys.argv)>=2): break
         ## skip signal
+        np = int((myTree.MZp-500)//500)
+        if (myTree.Mh>136): nq = 3
+        elif (myTree.Mh<114): nq = 0
         if (myTree.isTag and myTree.Mh<136 and myTree.Mh>114): continue
         elif (myTree.isTag): 
             h_SB.Fill(myTree.MZp,myTree.hPt)
@@ -93,6 +113,8 @@ def main():
             h_SB_hPt.Fill(myTree.hPt)
             h_SB_Mh.Fill(myTree.Mh)
             h_SB_MZp.Fill(myTree.MZp)
+            if (np<4 and np>=0): h_MhpassProfile[np].Fill(myTree.Mh)
+            if (nq<4 and nq>=0): h_MZppassProfile[nq].Fill(myTree.MZp)
         elif (myTree.isAntiTag):
             weight = R_pass_fail(MhTrans(myTree.Mh),ZpTrans(myTree.MZp))
             if (weight<0 ): print 'error', en, weight
@@ -104,6 +126,8 @@ def main():
             h_bk_Mh.Fill(myTree.Mh,weight)
             h_bk_MZp.Fill(myTree.MZp,weight)
             h_bk_hPt.Fill(myTree.hPt,weight)
+            if (np<4 and np>=0): h_MhfailProfile[np].Fill(myTree.Mh,weight)
+            if (nq<4 and nq>=0): h_MZpfailProfile[nq].Fill(myTree.MZp,weight)
 
     h_dif_alphabet.Divide(h_alphabet,h_pass)
     h_dif.Divide(h_bk,h_SB)
@@ -113,6 +137,8 @@ def main():
     h_dif_hPt.Divide(h_bk_hPt,h_SB_hPt)
     h_dif_MhPt.Divide(h_bk_MhPt,h_SB_MhPt)
     h_dif_MhMA0.Divide(h_bk_MhMA0,h_SB_MhMA0)
+    for i in range(4): h_MhdifProfile[i].Divide(h_MhpassProfile[i],h_MhfailProfile[i])
+    for i in range(4): h_MZpdifProfile[i].Divide(h_MZppassProfile[i],h_MZpfailProfile[i])
     pdfName = 'diff.pdf'
     c1.Print(pdfName+'[')
     ## gPad.SetLogz()
@@ -156,9 +182,18 @@ def main():
     c1.Print(pdfName)
     h_dif_hPt.Draw('e')
     c1.Print(pdfName)
+    for i in range(4):
+        h_MhdifProfile[i].Draw('e')
+        c1.Print(pdfName)
+
+    for i in range(4):
+        h_MZpdifProfile[i].Draw('e')
+        c1.Print(pdfName)
     output.Write()
 
     c1.Print(pdfName+']')
+    print "event",h_bk_Mh.Integral(),h_SB_Mh.Integral()
+    print "Mh  event ratio: ",h_bk_Mh.Integral()/h_SB_Mh.Integral()
 
 if __name__ == '__main__':
     main()
